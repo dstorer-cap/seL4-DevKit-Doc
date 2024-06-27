@@ -24,7 +24,7 @@ A search for `i2c_mxc` within U-Boot's github repository [https://github.com/u-b
 
 ![i2c GitHub search-2](../figures/github_search_i2c_2.png)
 
-This file is in the equivalent location within our `libubootdrivers` library, at `projects_libs/libubootdrivers/uboot/drivers/i2c/mxc_i2c.c`.
+This file is in the equivalent location within our `libubootdrivers` library, at `microkit/libubootdrivers/uboot/drivers/i2c/mxc_i2c.c`.
 
 In the code snippet from the screenshot above, we can see that the driver relies on the `UCLASS_I2C` uclass. This is provided by the file `i2c-uclass.c` in the same directory. At the end of `i2c-uclass.c`, we can see that driver and the other relevant drivers:
 
@@ -45,7 +45,7 @@ U_BOOT_DRIVER(i2c_generic_chip_drv) = {
     ...
 ```
 
-This provides the driver references that we need to add to `libubootdrivers` via `projects_libs/libubootdrivers/include/plat/maaxboard/plat_driver_data.h`:
+This provides the driver references that we need to add to `libubootdrivers` via `microkit/libubootdrivers/include/plat/maaxboard/plat_driver_data.h`:
 
 ```c
 /* Define the uclass drivers to be used on this platform */
@@ -60,7 +60,7 @@ extern struct driver _u_boot_driver__i2c_generic_chip_drv;
 ...
 ```
 
-and `projects_libs/libubootdrivers/src/plat/maaxboard/plat_driver_data.c`:
+and `microkit/libubootdrivers/src/plat/maaxboard/plat_driver_data.c`:
 
 ```c
 void initialise_driver_data(void) {
@@ -146,7 +146,7 @@ CONFIG_SYS_MXC_I2C3_SLAVE=0
 CONFIG_SPL_I2C_SUPPORT=y
 ```
 
-This is an excellent starting point and may well be complete; however, we may still need to apply some reasoning. For example, we do not need the final item (although it would do no harm), as SPL is only used when compiling the secondary bootloader and `CONFIG_SPL_I2C_SUPPORT` does not appear in our U-Boot code. The penultimate item concerning I2C4 (currently commented) is inaccurate and is an omission from this `maaxboard-uboot/uboot-imx` build. Examining the DTS file `maaxboard.dts` confirms that there are four I<sup>2</sup>C buses, so we will include a set of I2C4 macros. Note that, although inconsistent, it is not an issue that these macros use I2C1-I2C4 labels, whereas the DTS labels them 0-3. Our convention, such as in the following [CAmkES](#integrating-the-driver-with-camkes) section, will be to use 0-3 labels.
+This is an excellent starting point and may well be complete; however, we may still need to apply some reasoning. For example, we do not need the final item (although it would do no harm), as SPL is only used when compiling the secondary bootloader and `CONFIG_SPL_I2C_SUPPORT` does not appear in our U-Boot code. The penultimate item concerning I2C4 (currently commented) is inaccurate and is an omission from this `maaxboard-uboot/uboot-imx` build. Examining the DTS file `maaxboard.dts` confirms that there are four I<sup>2</sup>C buses, so we will include a set of I2C4 macros. Note that, although inconsistent, it is not an issue that these macros use I2C1-I2C4 labels, whereas the DTS labels them 0-3. Our convention, such as in the following [MICROKIT](#integrating-the-driver-with-microkit) section, will be to use 0-3 labels.
 
 Combining the previous paragraphs, we update the `libubootdrivers/CMakeLists.txt` makefile as follows (showing only extracts relevant to I<sup>2</sup>C).
 
@@ -207,9 +207,9 @@ The `add_definitions` lines establish the configuration macros. Note that `CONFI
 
 After these changes, within our `build` directory, `init_build` followed by `ninja` should result in a clean build.
 
-## Integrating the driver with CAmkES
+## Integrating the driver with Microkit
 
-We have established the underlying driver code, but it is not yet integrated within the CAmkES component that we shall be using. Assuming that we use the `uboot-driver-example` test application introduced earlier – see [Using the U-Boot Driver Library](uboot_driver_usage.md#instructions-for-running-the-uboot-driver-example-test) – we need to modify the file `camkes/apps/uboot-driver-example/include/plat/maaxboard/platform_devices.h` as follows.
+We have established the underlying driver code, but it is not yet integrated within the Microkit protection domain that we shall be using. Assuming that we use the `uboot-driver-example` test application introduced earlier – see [Using the U-Boot Driver Library](uboot_driver_usage.md#instructions-for-running-the-uboot-driver-example-test) – we need to modify the file `microkit/example/<platform>/uboot-driver-example/include/plat/maaxboard/platform_devices.h` as follows.
 
 Firstly, we need to add path definitions so that the devices can be located in the device tree:
 
@@ -328,7 +328,7 @@ extern struct cmd_tbl _u_boot_cmd__i2c;
 ...
 ```
 
-We need to pull in the U-Boot source code for the `i2c` command from the file `i2c.c` (`projects_libs/libubootdrivers/uboot/cmd/i2c.c`).
+We need to pull in the U-Boot source code for the `i2c` command from the file `i2c.c` (`microkit/libubootdrivers/uboot/cmd/i2c.c`).
 
 As with the previous addition of `.c` files, this needs to be added to the `libubootdrivers/CMakeLists.txt` makefile, along with the CMD configuration macro that we identified earlier. The previous extract from the makefile is repeated below, with two additional lines marked.
 
@@ -374,7 +374,7 @@ Within our `build` directory, after `init_build` and `ninja`, this should build 
 
 ## Testing the driver
 
-Now that we have the I<sup>2</sup>C driver and its API, we can call `i2c` commands from our test application. For example, the following lines can be used within a CAmkES component (in our example, these would be added to file `camkes/apps/uboot-driver-example/components/Test/src/test.c`):
+Now that we have the I<sup>2</sup>C driver and its API, we can call `i2c` commands from our test application. For example, the following lines can be used within a Microkit protection domain (in our example, these would be added to file `microkit/example/<platform>/uboot-driver-example/uboot-driver-example.c`):
 
 ```c
     // I2C test

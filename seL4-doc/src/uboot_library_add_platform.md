@@ -1,29 +1,20 @@
-# Library Extension - New Platform
+ # Library Extension - New Platform
 
 This section documents the required actions and guidance to add support for a new platform to the library.
 
-By the end of this section, an seL4 executable will be built for the new platform that can initialise the library (although the library may not support any of the platform's devices). Later sections of this guide cover the required actions to add driver support into the library for the new platform (e.g. see the [Odroid-C2 worked example appendix](appendices/add_odroidc2.md)).
+By the end of this section, an seL4 executable will be built for the new platform that can initialise the library (although the library may not support any of the platform's devices). Later sections of this guide cover the required actions to add driver support into the library for the new platform.
 
 Throughout the sections of this guide devoted to extension of the U-Boot driver library, it is expected the developer is working within the folder structure created by the `repo` tool (e.g. as used to build the [test applications](uboot_driver_usage.md)). Key folders and files within the hierarchy are shown below:
 
 ```text
 <manifest root>
 |
-├───kernel
-│   └───tools
-│       └───dts
-│
-└───projects
-    ├───camkes
-    │   └───apps
-    │       └───uboot-driver-example
-    │           └───include
-    │               └───plat
-    │                   └───<platform name>
-    │                       └───platform_devices.h
+└───microkit
+    ├───include
+    │   └───<platform>
+    │       └───all_platform_devices.h
     │
-    ├───projects_libs
-    │   └───libubootdrivers
+    ├───libubootdrivers
     │       ├───include
     │       │   └───plat
     │       │       └───<platform name>
@@ -34,13 +25,20 @@ Throughout the sections of this guide devoted to extension of the U-Boot driver 
     │       │           └───plat_driver_data.c
     │       └───CMakeLists.txt
     │
+    ├───boards
+    │      └───<platform>.dts
+    │ 
+    ├───example
+    │   └───<platform>
+    │       └───uboot-driver-example
+    │
     └───uboot
 ```
 
-- `kernel/tools/dts`: Location of platform device trees.
-- `projects/project_libs/camkes/apps/uboot-driver-example`: [The test application](uboot_driver_usage.md).
-- `projects/project_libs/libubootdrivers`: Referred to as "the library" throughout. See [linked Git repository](https://github.com/sel4devkit/projects_libs/tree/master/libubootdrivers).
-- `projects/uboot`: Fork of the U-Boot project source code (note, this is also symlinked to `projects/project_libs/libubootdrivers/uboot`).
+- `microkit/boards`: Location of platform device trees.
+- `example/<platform>/uboot-driver-example`: [The test application](uboot_driver_usage.md).
+- `microkit/libubootdrivers`: Referred to as "the library" throughout. See [linked Git repository](https://github.com/sel4-cap/dev-kit-libs/tree/main/libubootdrivers).
+- `microkit/uboot`: Fork of the U-Boot project source code (note, this is also symlinked to `projects/project_libs/libubootdrivers/uboot`).
 
 ## Required Reading
 
@@ -50,7 +48,7 @@ The developer should be familiar with the following tools and concepts in order 
 
 - *CMake*: Reference documentation is provided by [the CMake project](https://cmake.org/cmake/help/latest/), including details of the structure and syntax of the CMakeLists.txt file.
 
-- *CAmkES*: The seL4 foundation provides [documentation on its use of CAmkES](https://docs.sel4.systems/projects/camkes/) including tutorials.
+- *microkit*: The seL4 foundation provides [documentation on its use of microkit](https://github.com/seL4/microkit/blob/main/docs/manual.md) including tutorials.
 
 ## Add basic support to library
 
@@ -58,7 +56,7 @@ To allow the library to be successfully compiled for a new platform, the followi
 
 ### Update the library's CMake file to support the platform
 
-The library's CMake file (located at `projects/project_libs/libubootdrivers/CMakeLists.txt`) contains a section titled `Platform specific settings` to control the settings for each platform. This section:
+The library's CMake file (located at `microkit/libubootdrivers/CMakeLists.txt`) contains a section titled `Platform specific settings` to control the settings for each platform. This section:
 
 1. Declares a set of variables to control which drivers and optional capabilities are to be built for each platform. The default values produce a build including only a dummy timer driver; this is the minimum necessary to allow the library to be built.
 
@@ -177,7 +175,7 @@ void initialise_driver_data(void) {
 }
 ```
 
-As support for additional optional objects (e.g. drivers, driver classes, commands, etc.) are added for a platform, these files will need to be updated to reference the associated objects. See the files for the Avnet MaaXBoard platform for an example of these how these files provide more extensive support.
+As support for additional optional objects (e.g. drivers, driver classes, commands, etc.) are added for a platform, these files will be updated to reference the associated objects. See the files for the Avnet MaaXBoard platform for an example of these how these files provide more extensive support.
 
 ## Add support to example application
 
@@ -197,19 +195,9 @@ The following empty template file needs to be added to the application `include/
  * Note these need to be the root nodes of each device to be accessed */
 #define DEV_PATHS {};
 #define DEV_PATH_COUNT 0
-
-/* Provide the hardware settings for CAmkES. Note that we only need to inform
- * CAmkES of the devices with memory mapped regions, i.e. the REG_xxx
- * devices. See https://docs.sel4.systems/projects/camkes for syntax */
-
-#define HARDWARE_INTERFACES
-
-#define HARDWARE_COMPOSITION
-
-#define HARDWARE_CONFIGURATION
 ```
 
-As support for devices is added for a platform, this file will need to be updated to reference those devices from the platform's device tree. See the file for the Avnet MaaXBoard platform for an example that provides more extensive support.
+As support for devices is added for a platform, this file will be updated to reference those devices from the platform's device tree. See the file for the Avnet MaaXBoard platform for an example that provides more extensive support.
 
 ## Guidance on next steps
 
@@ -244,7 +232,3 @@ As with the clock driver, in many cases it may be possible to support devices wi
 Many drivers rely upon the availability of a GPIO driver to function correctly. For example: an MMC driver may use GPIO for card-detect and write-protect sensing; an Ethernet driver may use GPIO to reset an external PHY; an SPI driver may use GPIO for the chip select signal, etc.
 
 As such it may be necessary to provide a GPIO driver for other drivers to function correctly.
-
-## Appendices
-
-- [Odroid-C2 Worked Example](./appendices/add_odroidc2.md)
